@@ -3,7 +3,7 @@ package keyring_test
 import (
 	"log"
 
-	"github.com/99designs/keyring"
+	"github.com/josh5276/keyring"
 )
 
 func ExampleOpen() {

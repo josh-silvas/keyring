@@ -1,11 +1,14 @@
+// +build !windows
+
 package keyring
 
 import (
+	"bytes"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
-	"sort"
+	"reflect"
 	"testing"
 )
 
@@ -41,7 +44,7 @@ func setup(t *testing.T) (*passKeyring, func(t *testing.T)) {
 	k := &passKeyring{
 		dir:     passdir,
 		passcmd: "pass",
-		prefix:  "aws-vault",
+		prefix:  "keyring",
 	}
 
 	cmd, err = k.pass("init", "test@example.com")
@@ -91,9 +94,8 @@ func TestPassKeyringKeysWhenEmpty(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-
 	if len(keys) != 0 {
-		t.Fatalf("Expected 0 keys, got %q", len(keys))
+		t.Fatalf("Expected 0 keys, got %d", len(keys))
 	}
 }
 
@@ -101,16 +103,16 @@ func TestPassKeyringKeysWhenNotEmpty(t *testing.T) {
 	k, teardown := setup(t)
 	defer teardown(t)
 
-	item := Item{Key: "llamas", Data: []byte("llamas are great")}
-
-	if err := k.Set(item); err != nil {
-		t.Fatal(err)
+	items := []Item{
+		{Key: "llamas", Data: []byte("llamas are great")},
+		{Key: "alpacas", Data: []byte("alpacas are better")},
+		{Key: "africa/elephants", Data: []byte("who doesn't like elephants")},
 	}
 
-	item = Item{Key: "alpacas", Data: []byte("alpacas are better")}
-
-	if err := k.Set(item); err != nil {
-		t.Fatal(err)
+	for _, item := range items {
+		if err := k.Set(item); err != nil {
+			t.Fatal(err)
+		}
 	}
 
 	keys, err := k.Keys()
@@ -118,20 +120,32 @@ func TestPassKeyringKeysWhenNotEmpty(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if len(keys) != 2 {
-		t.Fatalf("Expected 2 keys, got %d", len(keys))
+	if len(keys) != len(items) {
+		t.Fatalf("Expected %d keys, got %d", len(items), len(keys))
 	}
 
-	sort.Strings(keys)
-	if keys[0] != "alpacas" {
-		t.Fatalf("Expected alpacas")
+	expectedKeys := []string{
+		"africa/elephants",
+		"alpacas",
+		"llamas",
 	}
-	if keys[1] != "llamas" {
-		t.Fatalf("Expected llamas")
+
+	if !reflect.DeepEqual(keys, expectedKeys) {
+		t.Fatalf("Expected keys %v, got %v", expectedKeys, keys)
 	}
 }
 
-func TestPassKeyringRemove(t *testing.T) {
+func TestPassKeyringRemoveWhenEmpty(t *testing.T) {
+	k, teardown := setup(t)
+	defer teardown(t)
+
+	err := k.Remove("no-such-key")
+	if err != ErrKeyNotFound {
+		t.Fatalf("expected ErrKeyNotFound, got: %v", err)
+	}
+}
+
+func TestPassKeyringRemoveWhenNotEmpty(t *testing.T) {
 	k, teardown := setup(t)
 	defer teardown(t)
 
@@ -152,5 +166,34 @@ func TestPassKeyringRemove(t *testing.T) {
 
 	if len(keys) != 0 {
 		t.Fatalf("Expected 0 keys, got %d", len(keys))
+	}
+}
+
+func TestPassKeyringGetWhenEmpty(t *testing.T) {
+	k, teardown := setup(t)
+	defer teardown(t)
+
+	_, err := k.Get("no-such-key")
+	if err != ErrKeyNotFound {
+		t.Fatalf("expected ErrKeyNotFound, got: %v", err)
+	}
+}
+
+func TestPassKeyringGetWhenNotEmpty(t *testing.T) {
+	k, teardown := setup(t)
+	defer teardown(t)
+
+	item := Item{Key: "llamas", Data: []byte("llamas are great")}
+
+	if err := k.Set(item); err != nil {
+		t.Fatal(err)
+	}
+
+	v1, err := k.Get(item.Key)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(v1.Data, item.Data) {
+		t.Fatal("Expected item not returned")
 	}
 }

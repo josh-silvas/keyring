@@ -1,7 +1,7 @@
 Keyring
 =======
-[![Build Status](https://github.com/99designs/keyring/workflows/Continuous%20Integration/badge.svg)](https://github.com/99designs/keyring/actions)
-[![Documentation](https://godoc.org/github.com/99designs/keyring?status.svg)](https://godoc.org/github.com/99designs/keyring)
+[![Build Status](https://github.com/josh5276/keyring/workflows/Continuous%20Integration/badge.svg)](https://github.com/josh5276/keyring/actions)
+[![Documentation](https://godoc.org/github.com/josh5276/keyring?status.svg)](https://godoc.org/github.com/josh5276/keyring)
 
 Keyring provides utility functions for and a common interface to a range of secure credential storage services. Originally developed as part of [AWS Vault](https://github.com/99designs/aws-vault), a command line tool for securely managing AWS access from developer workstations.
 
@@ -33,7 +33,7 @@ i, _ := ring.Get("foo")
 fmt.Printf("%s", i.Data)
 ```
 
-For more detail on the API please check [the keyring godocs](https://godoc.org/github.com/99designs/keyring)
+For more detail on the API please check [the keyring godocs](https://godoc.org/github.com/josh5276/keyring)
 
 
 ## Testing
